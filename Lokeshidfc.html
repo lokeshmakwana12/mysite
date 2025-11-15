@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle EMI & Down Payment Calculator (On House / Rented)</title>
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f7fb;
+  margin: 0; padding: 0;
+}
+header {
+  background: #007bff;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+.container {
+  max-width: 1000px;
+  margin: 20px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+label {
+  font-weight: bold;
+}
+input, select, button {
+  margin: 5px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+}
+button {
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  border: none;
+  font-size: 16px;
+}
+button:hover {
+  background: #0056b3;
+}
+.table-container {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background-color: #007bff;
+  color: white;
+}
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+nav button {
+  width: 140px;
+}
+.hidden {
+  display: none;
+}
+.result-box {
+  background: #f1f9ff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  border: 1px solid #007bff;
+}
+</style>
+</head>
+<body>
+<header>🚗 Vehicle EMI & Down Payment Calculator</header>
+
+<nav>
+  <button onclick="showPage(1)">Page 1 - Data Entry</button>
+  <button onclick="showPage(2)">Page 2 - Calculator</button>
+</nav>
+
+<!-- 🧾 Page 1: Data Entry -->
+<div class="container" id="page1">
+  <h2>📋 Add / Manage EMI Records</h2>
+
+  <label>Living Type:</label>
+  <select id="livingType">
+    <option value="On House">On House</option>
+    <option value="Rented">Rented</option>
+  </select>
+
+  <label>Date of Birth:</label>
+  <input type="date" id="dob" onchange="calculateAge()">
+  <label>Age:</label>
+  <input type="number" id="age" readonly>
+
+  <label>Vehicle Model:</label>
+  <input type="text" id="model" list="modelList">
+  <datalist id="modelList"></datalist>
+
+  <label>Down Payment (₹):</label>
+  <input type="number" id="downPayment" placeholder="Enter Down Payment">
+
+  <label>EMI 36 Months (₹):</label>
+  <input type="number" id="emi36" placeholder="Enter EMI for 36 months">
+  <label>EMI 48 Months (₹):</label>
+  <input type="number" id="emi48" placeholder="Enter EMI for 48 months">
+  <label>EMI 60 Months (₹):</label>
+  <input type="number" id="emi60" placeholder="Enter EMI for 60 months">
+
+  <button onclick="saveRecord()">💾 Save Record</button>
+
+  <div class="table-container">
+    <table id="recordTable">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Model</th>
+          <th>Age</th>
+          <th>Down Payment</th>
+          <th>EMI 36</th>
+          <th>EMI 48</th>
+          <th>EMI 60</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<label>Upload CSV File:</label>
+<input type="file" id="csvFile" accept=".csv" onchange="uploadCSV()">
+
+
+
+
+
+  <button onclick="downloadUpdatedHTML()">⬇️ Download Updated HTML</button>
+</div>
+
+<!-- 💰 Page 2: EMI Calculator -->
+<div class="container hidden" id="page2">
+  <h2>🔍 Check EMI by Age & Model</h2>
+  <p style="color:#d9534f; font-weight:bold;">
+    ध्यान दें: यह EMI हर महीने की 15 तारीख से 26 तारीख के बीच डिस्बर्स फाइल पर लागू होगी।
+    इस अवधि से पहले या बाद में EMI में थोड़ा अंतर हो सकता है।<br>
+पेसेन्जर गाड़ी पर परमिट का पेमेंट अलग से रहेगा।
+
+  </p>
+
+  <label>Living Type:</label>
+  <select id="checkType">
+    <option value="On House">On House</option>
+    <option value="Rented">Rented</option>
+  </select>
+
+  <label>Date of Birth:</label>
+  <input type="date" id="checkDob" onchange="calculateCheckAge()">
+  <label>Age:</label>
+  <input type="number" id="checkAge" readonly>
+
+  <label>Select Model:</label>
+  <select id="checkModel"></select>
+
+  <button onclick="findEMI()">🔎 Find EMI</button>
+
+  <div id="resultBox" class="result-box hidden"></div>
+
+<!-- 🔥 अपना नया text यहाँ डालो -->
+  <p style="margin-top:20px; font-weight:bold; color:#555;">
+    * इस लोन मे जीवन बीमा ओर EMI बीमा भी है।<br>
+किसी भी अस्पताल मे किसी भी बीमारी की वजह से भर्ती होते है तो बैंक<br>
+*2 दिन से 5 दिन तक 30000/- लोन खाते मे डाले जाएंगे <br>
+*6 दिन से 8 दिन तक 60000/- लोन खाते मे डाले जाएंगे <br>
+*9 दिन से 11 दिन तक 90000/- लोन खाते मे डाले जाएंगे <br>
+*12 दिन से 14 दिन तक 120000/- लोन खाते मे डाले जाएंगे <br> 
+*15 दिन से 15 दिन से ज्यादा दिन 150000/- लोन खाते मे डाले जाएंगे <br>
+
+
+  </p>
+<p style="color:#d9534f; font-weight:bold;">
+    ध्यान दें: यह EMI बीमा 1 साल मे 4 बार या 1 साल मे 450000 लाख से ज्यादा नहीं मिलेंगे <br>
+*बीमे का पेमेंट 2 महीने मे मिलेगा 
+  </p>
+
+</div>
+
+<script>
+let records = JSON.parse(localStorage.getItem('emiRecords')) || [];
+let baseModels = [
+  "Bajaj Maxima C Diesel",
+  "Bajaj Maxima C CNG",
+  "Bajaj Maxima Z",
+  "Bajaj RE CNG",
+  "Cargo EV"
+];
+
+// Populate Model List
+function populateModels() {
+  let dl = document.getElementById('modelList');
+  let sel = document.getElementById('checkModel');
+  dl.innerHTML = '';
+  sel.innerHTML = '<option value="">Select Model</option>';
+  baseModels.forEach(m => {
+    let opt = document.createElement('option');
+    opt.value = m;
+    dl.appendChild(opt);
+    let opt2 = document.createElement('option');
+    opt2.value = m;
+    opt2.textContent = m;
+    sel.appendChild(opt2);
+  });
+}
+
+// Calculate Age
+function calculateAge() {
+  let dob = document.getElementById('dob').value;
+  if(!dob) return;
+  let birthDate = new Date(dob);
+  let today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  let m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  document.getElementById('age').value = age;
+}
+function calculateCheckAge() {
+  let dob = document.getElementById('checkDob').value;
+  if(!dob) return;
+  let birthDate = new Date(dob);
+  let today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  let m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  document.getElementById('checkAge').value = age;
+}
+
+// Save Record
+function saveRecord() {
+  let type = document.getElementById('livingType').value;
+  let model = document.getElementById('model').value.trim();
+  let age = parseInt(document.getElementById('age').value);
+  let dp = parseFloat(document.getElementById('downPayment').value);
+  let e36 = parseFloat(document.getElementById('emi36').value);
+  let e48 = parseFloat(document.getElementById('emi48').value);
+  let e60 = parseFloat(document.getElementById('emi60').value);
+
+  if(!model || !age) {
+    alert("Please enter model and DOB first!");
+    return;
+  }
+
+  // allow multiple type entries (On House / Rented)
+  records = records.filter(r => !(r.model === model && r.age === age && r.type === type));
+  records.push({type, model, age, downPayment: dp, emi36: e36, emi48: e48, emi60: e60});
+  localStorage.setItem('emiRecords', JSON.stringify(records));
+  renderTable();
+}
+
+// Render Table
+function renderTable() {
+  let tbody = document.querySelector('#recordTable tbody');
+  tbody.innerHTML = '';
+  records.forEach((r,i) => {
+    let tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.type}</td>
+      <td>${r.model}</td>
+      <td>${r.age}</td>
+      <td>₹${r.downPayment || 0}</td>
+      <td>₹${r.emi36 || 0}</td>
+      <td>₹${r.emi48 || 0}</td>
+      <td>₹${r.emi60 || 0}</td>
+      <td><button onclick="deleteRecord(${i})">❌ Delete</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteRecord(index) {
+  records.splice(index,1);
+  localStorage.setItem('emiRecords', JSON.stringify(records));
+  renderTable();
+}
+
+
+function uploadCSV() {
+    let file = document.getElementById('csvFile').files[0];
+    if (!file) {
+        alert("Please select CSV file");
+        return;
+    }
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let rows = e.target.result.split("\n");
+
+        for (let i = 1; i < rows.length; i++) {
+            let cols = rows[i].split(",");
+
+            if (cols.length < 7) continue;
+
+            let type = cols[0]?.trim();
+            let model = cols[1]?.trim();
+            let age = parseInt(cols[2]);
+            let dp = parseFloat(cols[3]);
+            let e36 = parseFloat(cols[4]);
+            let e48 = parseFloat(cols[5]);
+            let e60 = parseFloat(cols[6]);
+
+            if (!model || !age) continue;
+
+            records = records.filter(r => !(r.type === type && r.model === model && r.age === age));
+            records.push({ type, model, age, downPayment: dp, emi36: e36, emi48: e48, emi60: e60 });
+        }
+
+        localStorage.setItem('emiRecords', JSON.stringify(records));
+        renderTable();
+        alert("CSV Upload Successfully!");
+    };
+
+    reader.readAsText(file);
+}
+
+
+
+
+
+// Find EMI
+function findEMI() {
+  let type = document.getElementById('checkType').value;
+  let model = document.getElementById('checkModel').value;
+  let age = parseInt(document.getElementById('checkAge').value);
+  if(!model || !age) { alert("Enter DOB and select model"); return; }
+  let found = records.find(r => r.model === model && r.age === age && r.type === type);
+  let box = document.getElementById('resultBox');
+  if(found) {
+    box.innerHTML = `
+      <h3>💡 ${type} EMI Details for ${model} (Age ${age})</h3>
+      <p><b>Down Payment:</b> ₹${found.downPayment || 0}</p>
+      <p><b>EMI 36 Months:</b> ₹${found.emi36 || 0}</p>
+      <p><b>EMI 48 Months:</b> ₹${found.emi48 || 0}</p>
+      <p><b>EMI 60 Months:</b> ₹${found.emi60 || 0}</p>
+    `;
+  } else {
+    box.innerHTML = `<p>❌ No data found for ${type}, this age, and model.</p>`;
+  }
+  box.classList.remove('hidden');
+}
+
+// Download HTML
+function downloadUpdatedHTML() {
+  let html = document.documentElement.outerHTML;
+  let blob = new Blob([html.replace(
+    /let records = JSON\.parse\(localStorage\.getItem\('emiRecords'\)\) \|\| \[\];/,
+    'let records = ' + JSON.stringify(records, null, 2) + ';'
+  )], {type: 'text/html'});
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "Vehicle_EMI_House_Rented_Final.html";
+  a.click();
+}
+
+// Page Switch
+function showPage(n) {
+  document.getElementById('page1').classList.add('hidden');
+  document.getElementById('page2').classList.add('hidden');
+  document.getElementById('page'+n).classList.remove('hidden');
+}
+populateModels();
+renderTable();
+</script>
+</body>
+</html>
